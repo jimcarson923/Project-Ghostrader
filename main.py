@@ -1,10 +1,20 @@
+"""
+Project Ghostrader
 
-from collectors.market_collector import get_stock_data
+Main Application Entry Point
 
-print("===================================")
-print("      GHOSTRADER MARKET TEST")
-print("===================================")
+Version: 0.5.0
+"""
 
-stock = get_stock_data("AAPL")
+from controllers.app_controller import AppController
 
-print(stock)
+
+def main():
+
+    controller = AppController()
+
+    controller.start()
+
+
+if __name__ == "__main__":
+    main()

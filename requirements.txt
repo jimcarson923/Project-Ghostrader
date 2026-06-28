@@ -1,0 +1,21 @@
+# ==========================================================
+# Project Ghostrader
+# Python Dependencies
+# Version: 0.5.0
+# ==========================================================
+
+# Market Data
+yfinance>=0.2.65
+
+# Data Analysis
+pandas>=2.3.0
+numpy>=2.3.0
+
+# Date & Time Utilities
+python-dateutil>=2.9.0
+
+# HTTP Requests
+requests>=2.32.0
+
+# Time Zone Support
+pytz>=2025.2
