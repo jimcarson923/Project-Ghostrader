@@ -1,126 +1,60 @@
 """
 =========================================================
-Project Ghostrader
-
-GhostCore
+GHO$TRADER Ghost Core
 
 Purpose:
-    Central orchestration layer for Ghostrader.
+    Central orchestration layer for Ghostrader analysis.
 
-Version:
-    1.2.0
+Build:
+    1.14.0 - Ghost Core Orchestrator
 =========================================================
 """
 
+from dataclasses import dataclass
+
 from services.market_service import MarketService
-from services.technical_service import TechnicalService
+from engines.ghost_score_engine import GhostScoreEngine, ScoreResult
+from engines.signal_engine import SignalEngine, SignalResult
+from engines.intelligence_engine import IntelligenceEngine, IntelligenceReport
 
-from engines.ghost_score_engine import GhostScoreEngine
-from engines.intelligence_engine import IntelligenceEngine
-from engines.signal_engine import SignalEngine
 
-from ai.ghost_assistant import GhostAssistant
-from ai.ghost_brain import GhostBrain
-
-from core.constants import DEFAULT_PERIOD
-from core.constants import DEFAULT_INTERVAL
-
-from models.analysis_result import AnalysisResult
+@dataclass
+class GhostAnalysisResult:
+    market_snapshot: object
+    score_result: ScoreResult
+    signal_result: SignalResult
+    intelligence_report: IntelligenceReport
 
 
 class GhostCore:
     """
-    GhostCore is the central AI brain for Ghostrader.
-
-    It coordinates:
-    - Market data
-    - Technical indicators
-    - Ghost Score
-    - Market intelligence
-    - Trading signal
-    - Ghost Assistant explanation layer
-    - Ghost Brain interpretation layer
+    Coordinates the complete Ghostrader analysis workflow.
     """
 
     def __init__(self):
-
-        self.version = "1.2.0"
-        self.status = "ONLINE"
-
         self.market_service = MarketService()
-        self.assistant = GhostAssistant()
-        self.brain = GhostBrain()
+        self.score_engine = GhostScoreEngine()
+        self.signal_engine = SignalEngine()
+        self.intelligence_engine = IntelligenceEngine()
 
-    def start(self):
-        """
-        Start GhostCore.
-        """
+    def analyze(self, symbol: str) -> GhostAnalysisResult:
+        clean_symbol = symbol.strip().upper()
 
-        print()
-        print("=" * 65)
-        print("                 GHOSTRADER AI BRAIN")
-        print("=" * 65)
-        print(f"Status        : {self.status}")
-        print(f"Version       : {self.version}")
-        print(f"Assistant     : {self.assistant.status}")
-        print(f"Ghost Brain   : {self.brain.status}")
-        print("=" * 65)
+        if not clean_symbol:
+            raise ValueError("Stock symbol cannot be empty.")
 
-    def run(self, symbol):
-        """
-        Run a complete Ghostrader analysis.
-        """
-
-        print(f"\nDownloading historical data for {symbol}...")
-
-        historical_data = self.market_service.get_historical_data(
-            symbol,
-            DEFAULT_PERIOD,
-            DEFAULT_INTERVAL,
+        market_snapshot = self.market_service.get_market_snapshot(clean_symbol)
+        score_result = self.score_engine.calculate(market_snapshot)
+        signal_result = self.signal_engine.generate_signal(score_result)
+        intelligence_report = self.intelligence_engine.build_report(
+            market_snapshot,
+            score_result,
+            signal_result,
         )
 
-        print("Calculating technical indicators...")
-
-        historical_data = TechnicalService.add_indicators(historical_data)
-
-        print("Calculating Ghost Score...")
-
-        score = GhostScoreEngine.calculate(historical_data)
-
-        print("Generating market intelligence...")
-
-        intelligence = IntelligenceEngine.analyze(score)
-
-        print("Generating trading signal...")
-
-        signal = SignalEngine.calculate(score["score"])
-
-        analysis = AnalysisResult(
-            symbol=symbol,
-            score=score,
-            intelligence=intelligence,
-            signal=signal,
+        return GhostAnalysisResult(
+            market_snapshot=market_snapshot,
+            score_result=score_result,
+            signal_result=signal_result,
+            intelligence_report=intelligence_report,
         )
-
-        print("Generating AI assistant explanation...")
-
-        assistant_summary = self.assistant.explain_analysis(analysis)
-
-        analysis.intelligence["assistant_summary"] = assistant_summary
-
-        print("Generating Ghost Brain interpretation...")
-
-        brain_briefing = self.brain.create_briefing(analysis)
-        next_action = self.brain.recommend_next_action(analysis)
-
-        analysis.intelligence["brain_briefing"] = brain_briefing
-        analysis.intelligence["next_action"] = next_action
-
-        return analysis
-
-    def ask(self, question, analysis):
-        """
-        Ask Ghost Assistant a question about the current analysis.
-        """
-
-        return self.assistant.answer_question(question, analysis)
