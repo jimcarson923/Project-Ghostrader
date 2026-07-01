@@ -64,4 +64,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+   from core.ghost_core import GhostCore
+
+brain = GhostCore()
+brain.hello() 

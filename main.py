@@ -1,19 +1,26 @@
 """
+=========================================================
 Project Ghostrader
 
 Main Application Entry Point
 
-Version: 0.5.0
+Purpose:
+    Starts the Ghostrader Desktop application.
+
+Version:
+    1.0.0
+=========================================================
 """
 
-from controllers.app_controller import AppController
+from ui.main_window import launch
 
 
 def main():
+    """
+    Start Ghostrader Desktop.
+    """
 
-    controller = AppController()
-
-    controller.start()
+    launch()
 
 
 if __name__ == "__main__":
