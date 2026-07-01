@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
 
 from services.market_service import MarketService
 from engines.ghost_score_engine import GhostScoreEngine
+from engines.signal_engine import SignalEngine
 
 
 @dataclass
@@ -29,6 +30,10 @@ class DashboardAnalysis:
     ghost_score: int
     confidence: int
     recommendation: str
+    signal: str
+    signal_strength: str
+    risk_level: str
+    action_message: str
     strengths: list[str]
     warnings: list[str]
 
@@ -39,6 +44,7 @@ class GhostraderMainWindow(QMainWindow):
 
         self.market_service = MarketService()
         self.score_engine = GhostScoreEngine()
+        self.signal_engine = SignalEngine()
 
         self.setWindowTitle("GHO$TRADER — Market Intelligence Dashboard")
         self.setMinimumSize(1200, 750)
@@ -143,13 +149,13 @@ class GhostraderMainWindow(QMainWindow):
         self.result_box.setReadOnly(True)
         self.result_box.setText(
             "Enter a stock symbol and click Analyze.\n\n"
-            "Build 1.10.0 connects the dashboard to the Ghost Score Engine:\n"
+            "Build 1.12.0 connects the dashboard to the Signal Engine:\n"
             "- Live market snapshot\n"
-            "- Official Ghost Score calculation\n"
-            "- Official confidence calculation\n"
-            "- Official recommendation output\n"
-            "- Engine-generated strengths\n"
-            "- Engine-generated warnings"
+            "- Ghost Score Engine\n"
+            "- Signal Engine\n"
+            "- Signal strength\n"
+            "- Risk level\n"
+            "- Beginner-friendly action message"
         )
 
         self.status_label = QLabel("Status: Ready")
@@ -181,7 +187,7 @@ class GhostraderMainWindow(QMainWindow):
             self.result_box.setText("Please enter a valid stock symbol using letters only. Example: AAPL")
             return
 
-        self.status_label.setText(f"Status: Running Ghost Score Engine for {symbol}...")
+        self.status_label.setText(f"Status: Running full signal analysis for {symbol}...")
         self.analyze_button.setEnabled(False)
 
         try:
@@ -200,6 +206,7 @@ class GhostraderMainWindow(QMainWindow):
     def build_dashboard_analysis(self, symbol: str) -> DashboardAnalysis:
         market_snapshot = self.market_service.get_market_snapshot(symbol)
         score_result = self.score_engine.calculate(market_snapshot)
+        signal_result = self.signal_engine.generate_signal(score_result)
 
         return DashboardAnalysis(
             symbol=market_snapshot.symbol,
@@ -210,6 +217,10 @@ class GhostraderMainWindow(QMainWindow):
             ghost_score=score_result.ghost_score,
             confidence=score_result.confidence,
             recommendation=score_result.recommendation,
+            signal=signal_result.signal,
+            signal_strength=signal_result.signal_strength,
+            risk_level=signal_result.risk_level,
+            action_message=signal_result.action_message,
             strengths=score_result.strengths,
             warnings=score_result.warnings,
         )
@@ -239,6 +250,18 @@ Confidence:
 Recommendation:
 {analysis.recommendation}
 
+Signal:
+{analysis.signal}
+
+Signal Strength:
+{analysis.signal_strength}
+
+Risk Level:
+{analysis.risk_level}
+
+Action Message:
+{analysis.action_message}
+
 Strengths:
 {strengths_text}
 
@@ -249,7 +272,7 @@ Analysis Status:
 Complete
 
 Build:
-Ghostrader Build 1.10.0 — Connect Dashboard to Ghost Score Engine
+Ghostrader Build 1.12.0 — Connect Dashboard to Signal Engine
 """
 
         self.result_box.setText(result_text.strip())
