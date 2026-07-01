@@ -6,7 +6,7 @@ Purpose:
     Central orchestration layer for Ghostrader analysis.
 
 Build:
-    1.14.0 - Ghost Core Orchestrator
+    1.17.0 - Technical Indicator Engine Integration
 =========================================================
 """
 
@@ -16,11 +16,16 @@ from services.market_service import MarketService
 from engines.ghost_score_engine import GhostScoreEngine, ScoreResult
 from engines.signal_engine import SignalEngine, SignalResult
 from engines.intelligence_engine import IntelligenceEngine, IntelligenceReport
+from engines.technical_indicator_engine import (
+    TechnicalIndicatorEngine,
+    TechnicalIndicatorResult,
+)
 
 
 @dataclass
 class GhostAnalysisResult:
     market_snapshot: object
+    technical_result: TechnicalIndicatorResult
     score_result: ScoreResult
     signal_result: SignalResult
     intelligence_report: IntelligenceReport
@@ -33,6 +38,7 @@ class GhostCore:
 
     def __init__(self):
         self.market_service = MarketService()
+        self.technical_engine = TechnicalIndicatorEngine()
         self.score_engine = GhostScoreEngine()
         self.signal_engine = SignalEngine()
         self.intelligence_engine = IntelligenceEngine()
@@ -44,6 +50,7 @@ class GhostCore:
             raise ValueError("Stock symbol cannot be empty.")
 
         market_snapshot = self.market_service.get_market_snapshot(clean_symbol)
+        technical_result = self.technical_engine.analyze(market_snapshot)
         score_result = self.score_engine.calculate(market_snapshot)
         signal_result = self.signal_engine.generate_signal(score_result)
         intelligence_report = self.intelligence_engine.build_report(
@@ -54,6 +61,7 @@ class GhostCore:
 
         return GhostAnalysisResult(
             market_snapshot=market_snapshot,
+            technical_result=technical_result,
             score_result=score_result,
             signal_result=signal_result,
             intelligence_report=intelligence_report,
