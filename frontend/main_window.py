@@ -126,11 +126,12 @@ class GhostraderMainWindow(QMainWindow):
         self.result_box.setReadOnly(True)
         self.result_box.setText(
             "Enter a stock symbol and click Analyze.\n\n"
-            "Build 1.18.0 displays technical indicator output:\n"
-            "- Trend direction\n"
-            "- Momentum status\n"
-            "- Volume status\n"
-            "- Technical summary\n"
+            "Build 1.32.0 displays Strategy Lab results:\n"
+            "- Strategy name\n"
+            "- PASS / FAIL result\n"
+            "- Passed rules\n"
+            "- Failed rules\n"
+            "- Strategy summary\n"
             "- Ghost Core integration"
         )
 
@@ -185,9 +186,15 @@ class GhostraderMainWindow(QMainWindow):
         score = result.score_result
         signal = result.signal_result
         report = result.intelligence_report
+        strategy = result.strategy_result
 
         strengths_text = "\n".join(f"- {item}" for item in score.strengths)
         warnings_text = "\n".join(f"- {item}" for item in score.warnings)
+
+        passed_rules_text = self._format_rule_list(strategy.passed_rules)
+        failed_rules_text = self._format_rule_list(strategy.failed_rules)
+
+        strategy_status = "PASS" if strategy.passed else "FAIL"
 
         result_text = f"""
 {report.title}
@@ -227,6 +234,19 @@ Signal Strength:
 Risk Level:
 {signal.risk_level}
 
+Strategy Lab:
+Strategy Name: {strategy.strategy_name}
+Strategy Result: {strategy_status}
+
+Passed Rules:
+{passed_rules_text}
+
+Failed Rules:
+{failed_rules_text}
+
+Strategy Summary:
+{strategy.summary}
+
 Market Context:
 {report.market_context}
 
@@ -252,10 +272,16 @@ Analysis Status:
 Complete
 
 Build:
-Ghostrader Build 1.18.0 — Display Technical Indicators on Dashboard
+Ghostrader Build 1.32.0 — Display Strategy Lab Results on Dashboard
 """
 
         self.result_box.setText(result_text.strip())
+
+    def _format_rule_list(self, rules: list[str]) -> str:
+        if not rules:
+            return "- None"
+
+        return "\n".join(f"- {rule}" for rule in rules)
 
 
 def main():
