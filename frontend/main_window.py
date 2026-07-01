@@ -1,24 +1,31 @@
 import sys
 from dataclasses import dataclass
+
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QApplication,
-    QMainWindow,
-    QWidget,
+    QFrame,
     QLabel,
-    QPushButton,
-    QVBoxLayout,
     QHBoxLayout,
     QLineEdit,
+    QMainWindow,
+    QPushButton,
     QTextEdit,
-    QFrame,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt6.QtCore import Qt
+
+from services.market_service import MarketService
+from engines.ghost_score_engine import GhostScoreEngine
 
 
 @dataclass
 class DashboardAnalysis:
     symbol: str
-    current_price: str
+    current_price: float
+    daily_change: float
+    daily_change_percent: float
+    volume: int
     ghost_score: int
     confidence: int
     recommendation: str
@@ -29,6 +36,9 @@ class DashboardAnalysis:
 class GhostraderMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        self.market_service = MarketService()
+        self.score_engine = GhostScoreEngine()
 
         self.setWindowTitle("GHO$TRADER — Market Intelligence Dashboard")
         self.setMinimumSize(1200, 750)
@@ -62,6 +72,11 @@ class GhostraderMainWindow(QMainWindow):
 
             QPushButton:hover {
                 background-color: #00CC6A;
+            }
+
+            QPushButton:disabled {
+                background-color: #333333;
+                color: #777777;
             }
 
             QTextEdit {
@@ -128,13 +143,13 @@ class GhostraderMainWindow(QMainWindow):
         self.result_box.setReadOnly(True)
         self.result_box.setText(
             "Enter a stock symbol and click Analyze.\n\n"
-            "Build 1.5.0 adds a working Analyze button workflow:\n"
-            "- Symbol validation\n"
-            "- Analysis execution\n"
-            "- Ghost Score calculation\n"
-            "- Recommendation display\n"
-            "- Strength and warning output\n"
-            "- Status updates"
+            "Build 1.10.0 connects the dashboard to the Ghost Score Engine:\n"
+            "- Live market snapshot\n"
+            "- Official Ghost Score calculation\n"
+            "- Official confidence calculation\n"
+            "- Official recommendation output\n"
+            "- Engine-generated strengths\n"
+            "- Engine-generated warnings"
         )
 
         self.status_label = QLabel("Status: Ready")
@@ -166,58 +181,54 @@ class GhostraderMainWindow(QMainWindow):
             self.result_box.setText("Please enter a valid stock symbol using letters only. Example: AAPL")
             return
 
-        self.status_label.setText(f"Status: Analyzing {symbol}...")
+        self.status_label.setText(f"Status: Running Ghost Score Engine for {symbol}...")
         self.analyze_button.setEnabled(False)
 
-        analysis = self.build_dashboard_analysis(symbol)
-        self.display_analysis(analysis)
-
-        self.analyze_button.setEnabled(True)
-        self.status_label.setText(f"Status: Analysis complete for {symbol}")
+        try:
+            analysis = self.build_dashboard_analysis(symbol)
+            self.display_analysis(analysis)
+            self.status_label.setText(f"Status: Analysis complete for {symbol}")
+        except Exception as error:
+            self.result_box.setText(
+                "Ghostrader could not complete the analysis.\n\n"
+                f"Error:\n{error}"
+            )
+            self.status_label.setText("Status: Analysis failed.")
+        finally:
+            self.analyze_button.setEnabled(True)
 
     def build_dashboard_analysis(self, symbol: str) -> DashboardAnalysis:
-        base_score = 70 + (sum(ord(char) for char in symbol) % 25)
-        confidence = min(base_score - 3, 95)
-
-        if base_score >= 85:
-            recommendation = "BUY"
-        elif base_score >= 70:
-            recommendation = "WATCH"
-        else:
-            recommendation = "AVOID"
-
-        estimated_price = 100 + (sum(ord(char) for char in symbol) % 250)
-
-        strengths = [
-            "Technical structure is currently favorable",
-            "Momentum profile is showing positive behavior",
-            "Setup quality supports continued monitoring",
-        ]
-
-        warnings = [
-            "This is not yet connected to live market data",
-            "Risk management and position sizing are still required",
-        ]
+        market_snapshot = self.market_service.get_market_snapshot(symbol)
+        score_result = self.score_engine.calculate(market_snapshot)
 
         return DashboardAnalysis(
-            symbol=symbol,
-            current_price=f"${estimated_price:.2f}",
-            ghost_score=base_score,
-            confidence=confidence,
-            recommendation=recommendation,
-            strengths=strengths,
-            warnings=warnings,
+            symbol=market_snapshot.symbol,
+            current_price=market_snapshot.current_price,
+            daily_change=market_snapshot.daily_change,
+            daily_change_percent=market_snapshot.daily_change_percent,
+            volume=market_snapshot.volume,
+            ghost_score=score_result.ghost_score,
+            confidence=score_result.confidence,
+            recommendation=score_result.recommendation,
+            strengths=score_result.strengths,
+            warnings=score_result.warnings,
         )
 
     def display_analysis(self, analysis: DashboardAnalysis):
+        strengths_text = "\n".join(f"- {item}" for item in analysis.strengths)
+        warnings_text = "\n".join(f"- {item}" for item in analysis.warnings)
+
         result_text = f"""
 GHO$TRADER INTELLIGENCE REPORT
 
 Symbol:
 {analysis.symbol}
 
-Current Price:
-{analysis.current_price}
+Market Snapshot:
+Current Price: ${analysis.current_price:,.2f}
+Daily Change: ${analysis.daily_change:,.2f}
+Daily Change Percent: {analysis.daily_change_percent:.2f}%
+Volume: {analysis.volume:,}
 
 Ghost Score:
 {analysis.ghost_score} / 100
@@ -229,19 +240,16 @@ Recommendation:
 {analysis.recommendation}
 
 Strengths:
-- {analysis.strengths[0]}
-- {analysis.strengths[1]}
-- {analysis.strengths[2]}
+{strengths_text}
 
 Warnings:
-- {analysis.warnings[0]}
-- {analysis.warnings[1]}
+{warnings_text}
 
 Analysis Status:
 Complete
 
 Build:
-Ghostrader Build 1.5.0 — Analyze Button Integration
+Ghostrader Build 1.10.0 — Connect Dashboard to Ghost Score Engine
 """
 
         self.result_box.setText(result_text.strip())
