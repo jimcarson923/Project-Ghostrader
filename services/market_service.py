@@ -3,15 +3,17 @@
 GHO$TRADER Market Service
 
 Purpose:
-    Provides market snapshot data for the Ghostrader analysis
-    workflow.
+    Provides live market snapshot data for the Ghostrader
+    analysis workflow using yfinance.
 
 Build:
-    1.6.0 - Market Service Foundation
+    1.8.1 - Reliable Live Price Fix
 =========================================================
 """
 
 from dataclasses import dataclass
+
+import yfinance as yf
 
 
 @dataclass
@@ -25,12 +27,7 @@ class MarketSnapshot:
 
 class MarketService:
     """
-    Temporary market service.
-
-    This build creates the official service layer that the
-    Analyze button will use in the next milestone.
-
-    Live market data will be added later.
+    Market service for retrieving live stock market data.
     """
 
     def get_market_snapshot(self, symbol: str) -> MarketSnapshot:
@@ -39,17 +36,32 @@ class MarketService:
         if not clean_symbol:
             raise ValueError("Stock symbol cannot be empty.")
 
-        base_value = sum(ord(char) for char in clean_symbol)
+        ticker = yf.Ticker(clean_symbol)
 
-        current_price = 100 + (base_value % 250)
-        daily_change = round(((base_value % 21) - 10) * 0.37, 2)
-        daily_change_percent = round((daily_change / current_price) * 100, 2)
-        volume = 1_000_000 + (base_value * 12_345)
+        history = ticker.history(period="5d", interval="1d")
+
+        if history.empty:
+            raise ValueError(f"Could not retrieve market data for {clean_symbol}.")
+
+        latest_row = history.iloc[-1]
+        previous_row = history.iloc[-2] if len(history) > 1 else latest_row
+
+        current_price = float(latest_row["Close"])
+        previous_close = float(previous_row["Close"])
+        volume = int(latest_row["Volume"])
+
+        daily_change = current_price - previous_close
+
+        if previous_close != 0:
+            daily_change_percent = (daily_change / previous_close) * 100
+        else:
+            daily_change_percent = 0.0
 
         return MarketSnapshot(
             symbol=clean_symbol,
-            current_price=float(current_price),
-            daily_change=daily_change,
-            daily_change_percent=daily_change_percent,
+            current_price=round(current_price, 2),
+            daily_change=round(daily_change, 2),
+            daily_change_percent=round(daily_change_percent, 2),
             volume=volume,
         )
+    
