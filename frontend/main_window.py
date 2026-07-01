@@ -126,12 +126,12 @@ class GhostraderMainWindow(QMainWindow):
         self.result_box.setReadOnly(True)
         self.result_box.setText(
             "Enter a stock symbol and click Analyze.\n\n"
-            "Build 1.15.0 connects the dashboard to Ghost Core:\n"
-            "- Market Service\n"
-            "- Ghost Score Engine\n"
-            "- Signal Engine\n"
-            "- Intelligence Engine\n"
-            "- Clean UI architecture"
+            "Build 1.18.0 displays technical indicator output:\n"
+            "- Trend direction\n"
+            "- Momentum status\n"
+            "- Volume status\n"
+            "- Technical summary\n"
+            "- Ghost Core integration"
         )
 
         self.status_label = QLabel("Status: Ready")
@@ -181,6 +181,7 @@ class GhostraderMainWindow(QMainWindow):
 
     def display_analysis(self, result):
         market = result.market_snapshot
+        technical = result.technical_result
         score = result.score_result
         signal = result.signal_result
         report = result.intelligence_report
@@ -199,6 +200,14 @@ Current Price: ${market.current_price:,.2f}
 Daily Change: ${market.daily_change:,.2f}
 Daily Change Percent: {market.daily_change_percent:.2f}%
 Volume: {market.volume:,}
+
+Technical Indicators:
+Trend Direction: {technical.trend_direction}
+Momentum Status: {technical.momentum_status}
+Volume Status: {technical.volume_status}
+
+Technical Summary:
+{technical.technical_summary}
 
 Ghost Score:
 {score.ghost_score} / 100
@@ -243,7 +252,7 @@ Analysis Status:
 Complete
 
 Build:
-Ghostrader Build 1.15.0 — Connect Dashboard to Ghost Core
+Ghostrader Build 1.18.0 — Display Technical Indicators on Dashboard
 """
 
         self.result_box.setText(result_text.strip())
