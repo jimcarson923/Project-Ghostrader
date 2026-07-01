@@ -8,11 +8,11 @@ Purpose:
     Starts the Ghostrader Desktop application.
 
 Version:
-    1.0.0
+    1.5.1
 =========================================================
 """
 
-from ui.main_window import launch
+from frontend.main_window import main as launch_frontend
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     Start Ghostrader Desktop.
     """
 
-    launch()
+    launch_frontend()
 
 
 if __name__ == "__main__":
