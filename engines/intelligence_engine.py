@@ -1,74 +1,85 @@
 """
-Ghostrader Intelligence Engine
+=========================================================
+GHO$TRADER Intelligence Engine
 
-Converts market data into a human-readable market assessment.
+Purpose:
+    Builds a beginner-friendly intelligence report from
+    market, score, and signal results.
+
+Build:
+    1.13.0 - Intelligence Report Engine
+=========================================================
 """
+
+from dataclasses import dataclass
+
+
+@dataclass
+class IntelligenceReport:
+    symbol: str
+    title: str
+    summary: str
+    market_context: str
+    score_explanation: str
+    signal_explanation: str
+    risk_summary: str
+    beginner_takeaway: str
 
 
 class IntelligenceEngine:
+    """
+    Official intelligence engine for Ghostrader.
 
-    @staticmethod
-    def analyze(result: dict) -> dict:
-        """
-        Analyze Ghost Score results and generate
-        market intelligence.
-        """
+    This engine converts raw market, score, and signal outputs
+    into a plain-English report for beginner traders.
+    """
 
-        score = result["score"]
-        rsi = result["rsi"]
-        price = result["close"]
-        sma20 = result["sma20"]
-        sma50 = result["sma50"]
+    def build_report(self, market_snapshot, score_result, signal_result) -> IntelligenceReport:
+        symbol = market_snapshot.symbol
 
-        # -------------------------
-        # Trend
-        # -------------------------
-
-        if price > sma20 and price > sma50:
-            trend = "Bullish"
-        elif price < sma20 and price < sma50:
-            trend = "Bearish"
-        else:
-            trend = "Neutral"
-
-        # -------------------------
-        # Momentum
-        # -------------------------
-
-        if rsi >= 60:
-            momentum = "Strong"
-
-        elif rsi >= 45:
-            momentum = "Neutral"
-
-        else:
-            momentum = "Weak"
-
-        # -------------------------
-        # Risk
-        # -------------------------
-
-        if score >= 80:
-            risk = "Low"
-
-        elif score >= 50:
-            risk = "Medium"
-
-        else:
-            risk = "High"
-
-        confidence = max(0, min(score + 20, 100))
+        title = f"GHO$TRADER Intelligence Report — {symbol}"
 
         summary = (
-            f"{trend} trend detected. "
-            f"Momentum is {momentum.lower()}. "
-            f"Current trading risk is {risk.lower()}."
+            f"{symbol} currently has a Ghost Score of "
+            f"{score_result.ghost_score}/100 with {score_result.confidence}% confidence. "
+            f"The active signal is {signal_result.signal}."
         )
 
-        return {
-            "trend": trend,
-            "momentum": momentum,
-            "risk": risk,
-            "confidence": confidence,
-            "summary": summary,
-        }
+        market_context = (
+            f"{symbol} is trading at ${market_snapshot.current_price:,.2f}. "
+            f"The daily move is ${market_snapshot.daily_change:,.2f}, "
+            f"or {market_snapshot.daily_change_percent:.2f}%. "
+            f"Current volume is {market_snapshot.volume:,} shares."
+        )
+
+        score_explanation = (
+            "The Ghost Score is based on the current market snapshot, "
+            "including daily price movement and trading volume. "
+            "Higher scores indicate stronger market behavior, while lower "
+            "scores indicate weaker or riskier conditions."
+        )
+
+        signal_explanation = (
+            f"The Signal Engine classified this setup as {signal_result.signal} "
+            f"with {signal_result.signal_strength.lower()} signal strength. "
+            f"The current risk level is {signal_result.risk_level}."
+        )
+
+        risk_summary = (
+            "This report is not financial advice. Beginner traders should use "
+            "Ghostrader as a decision-support tool, not as an automatic trading system. "
+            "Always review risk, position size, news, earnings dates, and broader market conditions."
+        )
+
+        beginner_takeaway = signal_result.action_message
+
+        return IntelligenceReport(
+            symbol=symbol,
+            title=title,
+            summary=summary,
+            market_context=market_context,
+            score_explanation=score_explanation,
+            signal_explanation=signal_explanation,
+            risk_summary=risk_summary,
+            beginner_takeaway=beginner_takeaway,
+        )
