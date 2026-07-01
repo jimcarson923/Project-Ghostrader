@@ -1,62 +1,55 @@
 """
-Ghostrader Market Service
+=========================================================
+GHO$TRADER Market Service
 
-Responsible for communicating with external market data providers.
+Purpose:
+    Provides market snapshot data for the Ghostrader analysis
+    workflow.
 
-Current Provider:
-    - Yahoo Finance
-
-Future Providers:
-    - Polygon
-    - Finnhub
-    - Alpha Vantage
-    - Interactive Brokers
+Build:
+    1.6.0 - Market Service Foundation
+=========================================================
 """
 
-import yfinance as yf
+from dataclasses import dataclass
+
+
+@dataclass
+class MarketSnapshot:
+    symbol: str
+    current_price: float
+    daily_change: float
+    daily_change_percent: float
+    volume: int
 
 
 class MarketService:
     """
-    Handles all communication with market data providers.
+    Temporary market service.
+
+    This build creates the official service layer that the
+    Analyze button will use in the next milestone.
+
+    Live market data will be added later.
     """
 
-    def get_stock_data(self, symbol: str):
-        """
-        Returns a snapshot of the current market data.
-        """
+    def get_market_snapshot(self, symbol: str) -> MarketSnapshot:
+        clean_symbol = symbol.strip().upper()
 
-        ticker = yf.Ticker(symbol)
-        info = ticker.info
+        if not clean_symbol:
+            raise ValueError("Stock symbol cannot be empty.")
 
-        return {
-            "symbol": symbol,
-            "company": info.get("longName"),
-            "price": info.get("currentPrice"),
-            "market_cap": info.get("marketCap"),
-            "volume": info.get("volume"),
-            "previous_close": info.get("previousClose"),
-            "open": info.get("open"),
-            "day_high": info.get("dayHigh"),
-            "day_low": info.get("dayLow"),
-        }
+        base_value = sum(ord(char) for char in clean_symbol)
 
-    def get_historical_data(
-        self,
-        symbol: str,
-        period: str = "6mo",
-        interval: str = "1d",
-    ):
-        """
-        Returns historical OHLCV data as a Pandas DataFrame.
-        """
+        current_price = 100 + (base_value % 250)
+        daily_change = round(((base_value % 21) - 10) * 0.37, 2)
+        daily_change_percent = round((daily_change / current_price) * 100, 2)
+        volume = 1_000_000 + (base_value * 12_345)
 
-        ticker = yf.Ticker(symbol)
-
-        history = ticker.history(
-            period=period,
-            interval=interval,
+        return MarketSnapshot(
+            symbol=clean_symbol,
+            current_price=float(current_price),
+            daily_change=daily_change,
+            daily_change_percent=daily_change_percent,
+            volume=volume,
         )
-
-        return history
-    
