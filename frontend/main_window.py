@@ -1,5 +1,4 @@
 import sys
-from dataclasses import dataclass
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
@@ -15,36 +14,14 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from services.market_service import MarketService
-from engines.ghost_score_engine import GhostScoreEngine
-from engines.signal_engine import SignalEngine
-
-
-@dataclass
-class DashboardAnalysis:
-    symbol: str
-    current_price: float
-    daily_change: float
-    daily_change_percent: float
-    volume: int
-    ghost_score: int
-    confidence: int
-    recommendation: str
-    signal: str
-    signal_strength: str
-    risk_level: str
-    action_message: str
-    strengths: list[str]
-    warnings: list[str]
+from core.ghost_core import GhostCore
 
 
 class GhostraderMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.market_service = MarketService()
-        self.score_engine = GhostScoreEngine()
-        self.signal_engine = SignalEngine()
+        self.ghost_core = GhostCore()
 
         self.setWindowTitle("GHO$TRADER — Market Intelligence Dashboard")
         self.setMinimumSize(1200, 750)
@@ -149,13 +126,12 @@ class GhostraderMainWindow(QMainWindow):
         self.result_box.setReadOnly(True)
         self.result_box.setText(
             "Enter a stock symbol and click Analyze.\n\n"
-            "Build 1.12.0 connects the dashboard to the Signal Engine:\n"
-            "- Live market snapshot\n"
+            "Build 1.15.0 connects the dashboard to Ghost Core:\n"
+            "- Market Service\n"
             "- Ghost Score Engine\n"
             "- Signal Engine\n"
-            "- Signal strength\n"
-            "- Risk level\n"
-            "- Beginner-friendly action message"
+            "- Intelligence Engine\n"
+            "- Clean UI architecture"
         )
 
         self.status_label = QLabel("Status: Ready")
@@ -187,12 +163,12 @@ class GhostraderMainWindow(QMainWindow):
             self.result_box.setText("Please enter a valid stock symbol using letters only. Example: AAPL")
             return
 
-        self.status_label.setText(f"Status: Running full signal analysis for {symbol}...")
+        self.status_label.setText(f"Status: Ghost Core analyzing {symbol}...")
         self.analyze_button.setEnabled(False)
 
         try:
-            analysis = self.build_dashboard_analysis(symbol)
-            self.display_analysis(analysis)
+            result = self.ghost_core.analyze(symbol)
+            self.display_analysis(result)
             self.status_label.setText(f"Status: Analysis complete for {symbol}")
         except Exception as error:
             self.result_box.setText(
@@ -203,64 +179,59 @@ class GhostraderMainWindow(QMainWindow):
         finally:
             self.analyze_button.setEnabled(True)
 
-    def build_dashboard_analysis(self, symbol: str) -> DashboardAnalysis:
-        market_snapshot = self.market_service.get_market_snapshot(symbol)
-        score_result = self.score_engine.calculate(market_snapshot)
-        signal_result = self.signal_engine.generate_signal(score_result)
+    def display_analysis(self, result):
+        market = result.market_snapshot
+        score = result.score_result
+        signal = result.signal_result
+        report = result.intelligence_report
 
-        return DashboardAnalysis(
-            symbol=market_snapshot.symbol,
-            current_price=market_snapshot.current_price,
-            daily_change=market_snapshot.daily_change,
-            daily_change_percent=market_snapshot.daily_change_percent,
-            volume=market_snapshot.volume,
-            ghost_score=score_result.ghost_score,
-            confidence=score_result.confidence,
-            recommendation=score_result.recommendation,
-            signal=signal_result.signal,
-            signal_strength=signal_result.signal_strength,
-            risk_level=signal_result.risk_level,
-            action_message=signal_result.action_message,
-            strengths=score_result.strengths,
-            warnings=score_result.warnings,
-        )
-
-    def display_analysis(self, analysis: DashboardAnalysis):
-        strengths_text = "\n".join(f"- {item}" for item in analysis.strengths)
-        warnings_text = "\n".join(f"- {item}" for item in analysis.warnings)
+        strengths_text = "\n".join(f"- {item}" for item in score.strengths)
+        warnings_text = "\n".join(f"- {item}" for item in score.warnings)
 
         result_text = f"""
-GHO$TRADER INTELLIGENCE REPORT
+{report.title}
 
-Symbol:
-{analysis.symbol}
+Summary:
+{report.summary}
 
 Market Snapshot:
-Current Price: ${analysis.current_price:,.2f}
-Daily Change: ${analysis.daily_change:,.2f}
-Daily Change Percent: {analysis.daily_change_percent:.2f}%
-Volume: {analysis.volume:,}
+Current Price: ${market.current_price:,.2f}
+Daily Change: ${market.daily_change:,.2f}
+Daily Change Percent: {market.daily_change_percent:.2f}%
+Volume: {market.volume:,}
 
 Ghost Score:
-{analysis.ghost_score} / 100
+{score.ghost_score} / 100
 
 Confidence:
-{analysis.confidence}%
+{score.confidence}%
 
 Recommendation:
-{analysis.recommendation}
+{score.recommendation}
 
 Signal:
-{analysis.signal}
+{signal.signal}
 
 Signal Strength:
-{analysis.signal_strength}
+{signal.signal_strength}
 
 Risk Level:
-{analysis.risk_level}
+{signal.risk_level}
 
-Action Message:
-{analysis.action_message}
+Market Context:
+{report.market_context}
+
+Score Explanation:
+{report.score_explanation}
+
+Signal Explanation:
+{report.signal_explanation}
+
+Beginner Takeaway:
+{report.beginner_takeaway}
+
+Risk Summary:
+{report.risk_summary}
 
 Strengths:
 {strengths_text}
@@ -272,7 +243,7 @@ Analysis Status:
 Complete
 
 Build:
-Ghostrader Build 1.12.0 — Connect Dashboard to Signal Engine
+Ghostrader Build 1.15.0 — Connect Dashboard to Ghost Core
 """
 
         self.result_box.setText(result_text.strip())
